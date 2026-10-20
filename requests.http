@@ -1,0 +1,20 @@
+
+### 1. Get all thoughts
+GET http://localhost:8080/
+
+### 2. Create a thought
+POST http://localhost:8080/
+Content-Type: application/json
+
+{
+  "message": "My fourth happy thought is that I can now create a thought using Postman!"
+}
+
+### 3. Get all thoughts again
+GET http://localhost:8080/
+
+
+### 3. Like a certain thought
+POST http://localhost:8080/6ad7b400dcc45945fa358fac/like
+
+

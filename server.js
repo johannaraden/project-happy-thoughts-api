@@ -1,14 +1,19 @@
+import 'dotenv/config'
 import express from 'express'
-import bodyParser from 'body-parser'
 import cors from 'cors'
 import mongoose from 'mongoose'
 
 const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/happyThoughts"
-mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true })
-mongoose.Promise = Promise
+mongoose.connect(mongoUrl)
 
+mongoose.connection.on('connected', () => {
+  console.log('MongoDB connected successfully')
+})
 
-const ERR_NO_THOUGHTS = 'Sorry, could not find any thoughts.'
+mongoose.connection.on('error', (error) => {
+  console.error('MongoDB connection error:', error.message)
+})
+
 
 // Defines the port the app will run on. Defaults to 8080, but can be 
 // overridden when starting the server. For example:
@@ -33,13 +38,13 @@ const Thought = mongoose.model('Thought', {
   },
   createdAt: {
     type: Date,
-    default: () => new Date()
+    default: Date.now
   }
 })
 
 // Add middlewares to enable cors and json body parsing
 app.use(cors())
-app.use(bodyParser.json())
+app.use(express.json())
 
 
 // Adding middleware for targeting server error for every request
@@ -61,11 +66,7 @@ app.get('/desc', (req, res) => {
 
 app.get('/', async (req, res) => {
   const thoughts = await Thought.find().sort({createdAt: 'desc'}).limit(20).exec()
-  if(thoughts){
-  res.status(201).json(thoughts)
-  } else {
-    res.status(404).json({message: ERR_NO_THOUGHTS})
-  }
+  res.status(200).json(thoughts)
 })
 
 // Post your own thought
@@ -75,7 +76,7 @@ app.post('/', async (req, res) => {
   const thought = new Thought({message})
   try {
     const savedThought = await thought.save()
-    res.json(201).json(savedThought)
+    res.status(201).json(savedThought)
   } catch (error) {
       res.status(400).json({message: 'Sorry could not save this thought to the database', error: error.errors});
       }
@@ -86,10 +87,10 @@ app.post('/', async (req, res) => {
 
 app.post('/:thoughtId/like', async (req, res) => {
   const { thoughtId } = req.params
-  console.log(`POST //${thoughtId}/like`)
+
   try {
     await Thought.updateOne({ _id: thoughtId }, { $inc: { hearts: 1 } })
-    res.status(201).json()
+    res.status(200).json()
   } catch {
     res.status(404).json({message: 'Could not update likes to an undefined thougt.'})
   }
